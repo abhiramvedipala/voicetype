@@ -13,6 +13,7 @@ from pynput import keyboard
 from src.audio import Recorder
 from src.cleanup import clean
 from src.config import settings
+from src.dictionary import apply_dictionary
 from src.injector import inject
 from src.transcriber import transcribe
 
@@ -44,8 +45,14 @@ class HotkeyListener:
             return
         self._pressed = True
         self._press_time = time.monotonic()
-        self._recorder.start()
-        self._on_status("recording")
+        try:
+            self._recorder.start()
+            self._on_status("recording")
+        except Exception as e:
+            print(f"VoiceType: couldn't start recording ({e}). Check System "
+                  "Settings > Privacy & Security > Microphone.")
+            self._pressed = False
+            self._on_status("idle")
 
     def _on_release(self, key) -> None:
         if key != self._key or not self._pressed:
@@ -59,11 +66,20 @@ class HotkeyListener:
             return  # accidental tap — discard, don't transcribe
 
         self._on_status("transcribing")
-        text = transcribe(audio)
-        text = clean(text)  # no-op unless cleanup/prompt mode is enabled
-        self._on_status("idle")
-        if text:
-            self._on_transcribed(text)
+        try:
+            # One guard around the whole pipeline: covers model-load
+            # failures (no internet on first run), transcription errors,
+            # and injection failures with a single catch, instead of
+            # scattering try/except across every module it touches.
+            text = transcribe(audio)
+            text = clean(text)  # no-op unless cleanup/prompt mode is enabled
+            text = apply_dictionary(text)
+            if text:
+                self._on_transcribed(text)
+        except Exception as e:
+            print(f"VoiceType: dictation failed ({e}).")
+        finally:
+            self._on_status("idle")
 
     def run(self) -> None:
         """Blocks forever, listening for the hotkey."""
