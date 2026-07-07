@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     hotkey: str = "alt_r"  # right Option key
     whisper_model: str = "base"  # tiny | base | small | medium
+    inject_mode: str = "keystrokes"  # keystrokes | clipboard
     cleanup_enabled: bool = False
     prompt_mode: bool = False
     api_key: str = ""

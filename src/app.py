@@ -10,15 +10,21 @@ from pynput import keyboard
 
 from src.audio import Recorder
 from src.config import settings
+from src.injector import inject
 from src.transcriber import transcribe
 
 MIN_HOLD_SECONDS = 0.3  # taps shorter than this are accidental, not intended
 
 
+def _type_it(text: str) -> None:
+    print(f"-> {text!r}")
+    inject(text)
+
+
 class HotkeyListener:
     """Push-to-talk over a single global key (default: right Option)."""
 
-    def __init__(self, on_transcribed=print) -> None:
+    def __init__(self, on_transcribed=_type_it) -> None:
         self._key = getattr(keyboard.Key, settings.hotkey)
         self._on_transcribed = on_transcribed
         self._recorder = Recorder()
