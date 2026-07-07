@@ -19,6 +19,19 @@ def test_pipeline_failure_is_swallowed():
     assert listener._pressed is False  # ready for the next press
 
 
+def test_pipeline_happy_path_applies_dictionary():
+    calls = []
+    listener = HotkeyListener(on_transcribed=calls.append)
+
+    with patch("src.app.transcribe", return_value="open cloud code now"):
+        listener._on_press(listener._key)
+        listener._press_time -= 1
+        listener._on_release(listener._key)
+
+    assert calls == ["open Claude Code now"]  # dictionary fix reached the callback
+
+
 if __name__ == "__main__":
     test_pipeline_failure_is_swallowed()
-    print("dictation pipeline error handling OK")
+    test_pipeline_happy_path_applies_dictionary()
+    print("dictation pipeline tests OK")

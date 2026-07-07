@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.voicetype.app</string>
+
+    <!-- Replace both paths below with your actual repo location (run `pwd`
+         inside the repo to get it), then rename this file to drop
+         ".example" before copying it into ~/Library/LaunchAgents/ -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/ABSOLUTE/PATH/TO/voicetype/.venv/bin/python</string>
+        <string>-m</string>
+        <string>src.app</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/ABSOLUTE/PATH/TO/voicetype</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/voicetype.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/voicetype.err</string>
+</dict>
+</plist>

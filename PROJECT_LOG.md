@@ -16,23 +16,26 @@ of every session.
 - [x] Step 6 — AI cleanup mode (src/cleanup.py) — code done + wired into app.py; fallback-to-raw-text path confirmed (no API key configured yet, so live LLM cleanup itself is untested — see below)
 - [x] Step 7 — Menu bar app (rumps) **[Mac-only]** — confirmed working live 2026-07-07
 - [x] Step 8 — Custom dictionary & polish — `user_dictionary.json` + `src/dictionary.py` wired in; single error-handling guard added around the whole transcribe→clean→dictionary→inject pipeline (mic-permission, model-load, and API failures all print a message and stay usable instead of crashing); automated test in `tests/test_dictation_pipeline.py` passed
-- [ ] Step 9 — README, ship it
+- [x] Step 9 — README, ship it — full README (architecture, setup, permissions, config table, launchd template) written; all modules import cleanly; both test files pass
+
+## Status: v1 shipped (2026-07-07)
+
+All 9 roadmap steps complete. Core loop (hotkey → record → transcribe →
+cleanup → dictionary → inject) confirmed working live on this Mac.
 
 ## Exact next step
 
-Step 9 (final): flesh out `README.md` (what it does, architecture flow in
-text, setup-from-fresh-clone incl. permissions walkthrough, config options
-table), optionally a launch-agent plist for auto-start on login, final full
-test pass of both modes, final commit + push.
+Nothing queued. Natural follow-ups if picked up later:
+- Test cleanup mode's actual LLM call end-to-end (needs a real
+  `VOICETYPE_API_KEY` in `.env` — untested so far, only the no-key fallback
+  path has been verified).
+- Rename the project folder (drop the `- WF` / space) — user's follow-up
+  task, not done by an agent session.
+- Persist the menu bar's mic picker choice to `.env` (currently session-only
+  by design, see `ponytail:` comment in `src/app.py`).
 
 Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
 incl. download), 5 s clip transcribed in 0.6 s warm.
-
-Pending manual check: cleanup mode's actual LLM call is untested end-to-end
-— no real `VOICETYPE_API_KEY` is in `.env` yet. Verified fallback instead:
-with no key, `clean()` catches the API error and returns the raw transcript
-unchanged. To test the real call, put a real OpenAI key in `.env`, set
-`VOICETYPE_CLEANUP_ENABLED=true`, run `.venv/bin/python -m src.cleanup`.
 
 ## Key decisions
 
