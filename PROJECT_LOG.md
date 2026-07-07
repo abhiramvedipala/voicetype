@@ -10,7 +10,7 @@ of every session.
 
 - [x] Step 1 — Repo & scaffolding (structure, config.py, pinned deps, first push)
 - [x] Step 2 — Audio capture (src/audio.py) **[Mac-only: needs mic]**
-- [ ] Step 3 — Local transcription (src/transcriber.py) **[Mac-only: model download + benchmark]**
+- [x] Step 3 — Local transcription (src/transcriber.py) **[Mac-only: model download + benchmark]**
 - [ ] Step 4 — Global hotkey (src/app.py) **[Mac-only: Accessibility permission]**
 - [ ] Step 5 — Text injection (src/injector.py) **[Mac-only: keyboard control]**
 - [ ] Step 6 — AI cleanup mode (src/cleanup.py) — code can be written anywhere, testing needs Mac
@@ -20,13 +20,12 @@ of every session.
 
 ## Exact next step
 
-Step 3: implement `src/transcriber.py` — faster-whisper "base" model,
-transcribe the numpy array from Recorder directly, benchmark a 5 s clip,
-config flag for OpenAI whisper API fallback. **Mac session recommended**
-(model download ~150 MB, benchmark timing is hardware-specific).
+Step 4: global hotkey in `src/app.py` — pynput listener, hold right-Option
+to record, release to stop+transcribe, taps under 0.3 s cancel. **Mac-only:
+needs Accessibility permission for the terminal.**
 
-Note: mic test (`python -m src.audio`) passed 2026-07-07 — stream captures
-at 16 kHz; run it yourself and speak to hear playback in test_recording.wav.
+Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
+incl. download), 5 s clip transcribed in 0.6 s warm. Mic test passed.
 
 ## Key decisions
 
