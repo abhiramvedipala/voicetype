@@ -1,0 +1,16 @@
+# Secrets — never commit API keys
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Audio artifacts from testing
+*.wav
+
+# Downloaded whisper models (big binaries, re-downloadable)
+models/
+
+# macOS
+.DS_Store
