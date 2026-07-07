@@ -23,25 +23,58 @@ of every session.
 All 9 roadmap steps complete. Core loop (hotkey → record → transcribe →
 cleanup → dictionary → inject) confirmed working live on this Mac.
 
+## Post-v1: Part A — Ollama local backend (2026-07-07)
+
+Cleanup mode now works fully offline/free via Ollama, in addition to
+Gemini (Step above) and OpenAI. **Zero code changes needed in
+`cleanup.py`** — it already only read `api_key` / `llm_model` /
+`llm_base_url` generically; Ollama support is entirely a `.env` change
+(this is the whole point of the OpenAI-compatible-endpoint pattern, see
+README's "Cleanup mode backends" section for the full explanation).
+
+- Installed via `brew install ollama`; `brew services start ollama`
+  registers a launchd agent to run it in the background at login.
+  **Note:** `brew services start` behaved oddly when run from this agent
+  session (job registered but not actually running per `launchctl list`;
+  had to fall back to running `ollama serve` directly to test) — likely a
+  launchd/session quirk specific to how this sandboxed tool session talks
+  to launchd, not expected to reproduce in a normal Terminal. Worth
+  double-checking `brew services list` shows `started` after a real login.
+- Pulled and live-tested both `llama3.2:3b` and `qwen2.5:3b`. Chose
+  **`qwen2.5:3b`** as the default — in side-by-side testing on the same
+  messy transcripts, `llama3.2:3b` paraphrased more than instructed
+  (changed "i wanted to ask if you could fix" → "I'd like to report a
+  bug"; turned a question into a command), while `qwen2.5:3b` preserved
+  wording much more literally. Both are the same size class (~2GB,
+  ~0.6s/call on this Apple Silicon Mac — no noticeable latency vs.
+  transcription itself).
+- Tightened `_CLEANUP_PROMPT` twice: first attempt (adding an inline
+  "the the bug" → "the bug" example) actually made `llama3.2:3b` rewrite
+  *more* aggressively, not less — the example seemed to prime it toward
+  general rewriting rather than a narrow fix. Second attempt (numbered
+  rules, explicit "do not rephrase, keep every other word in the exact
+  order," no inline arrow example) worked better on both models.
+- New config fields: none — Ollama reuses `api_key` / `llm_model` /
+  `llm_base_url` from the Gemini work. `VOICETYPE_API_KEY=ollama` (or any
+  non-empty string) is required even though Ollama doesn't check it — the
+  `openai` client library itself needs a non-empty string.
+
 ## Exact next step
 
-Nothing queued. Natural follow-ups if picked up later:
+Part B queued: macOS permissions walkthrough for daily use, launch-at-login
+setup (need to resolve the `brew services` launchd quirk above or use the
+`launchd/com.voicetype.app.plist.example` template instead), one-page daily
+usage section in README, final commit.
+
+Other follow-ups, not urgent:
 - Rename the project folder (drop the `- WF` / space) — user's follow-up
   task, not done by an agent session.
 - Persist the menu bar's mic picker choice to `.env` (currently session-only
   by design, see `ponytail:` comment in `src/app.py`).
-- Cleanup prompt could be tightened — one live test left a duplicated word
-  ("the the bug") uncorrected; not a wiring bug, just prompt quality.
-
-Cleanup mode confirmed working live end-to-end 2026-07-07 using Gemini via
-its OpenAI-compatible endpoint (`VOICETYPE_LLM_BASE_URL` +
-`VOICETYPE_LLM_MODEL`, both new config fields, see Key decisions below).
-`gemini-2.0-flash` had 0 free-tier quota on the tested account;
-`gemini-2.5-flash` worked. `.env` (local, gitignored) holds the real key —
-never commit it.
 
 Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
-incl. download), 5 s clip transcribed in 0.6 s warm.
+incl. download), 5 s clip transcribed in 0.6 s warm. Cleanup call via
+Ollama (`qwen2.5:3b`, warm): ~0.6s.
 
 ## Key decisions
 
