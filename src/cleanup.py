@@ -46,7 +46,7 @@ _client = None
 def _get_client() -> OpenAI:
     global _client
     if _client is None:
-        _client = OpenAI(api_key=settings.api_key)
+        _client = OpenAI(api_key=settings.api_key, base_url=settings.llm_base_url or None)
     return _client
 
 
@@ -65,7 +65,7 @@ def clean(text: str) -> str:
 def _call_llm(system_prompt: str, text: str) -> str:
     try:
         response = _get_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model=settings.llm_model,
             temperature=0,
             max_tokens=500,
             messages=[

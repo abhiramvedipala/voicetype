@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     cleanup_enabled: bool = False
     prompt_mode: bool = False
     api_key: str = ""
+    llm_model: str = "gpt-4o-mini"  # e.g. "gemini-2.0-flash" if using Gemini
+    llm_base_url: str = ""  # empty = OpenAI's default; set to point at a compatible API (e.g. Gemini)
     use_api_transcription: bool = False
 
 
