@@ -4,6 +4,7 @@ swallowed — the listener must never crash or get stuck on a bad dictation."""
 from unittest.mock import patch
 
 from src.app import HotkeyListener
+from src.config import settings
 
 
 def test_pipeline_failure_is_swallowed():
@@ -23,7 +24,13 @@ def test_pipeline_happy_path_applies_dictionary():
     calls = []
     listener = HotkeyListener(on_transcribed=calls.append)
 
-    with patch("src.app.transcribe", return_value="open cloud code now"):
+    # Isolate from whatever cleanup/prompt mode is set in the local .env —
+    # this test only cares about the dictionary step, not the LLM.
+    with (
+        patch("src.app.transcribe", return_value="open cloud code now"),
+        patch.object(settings, "cleanup_enabled", False),
+        patch.object(settings, "prompt_mode", False),
+    ):
         listener._on_press(listener._key)
         listener._press_time -= 1
         listener._on_release(listener._key)
