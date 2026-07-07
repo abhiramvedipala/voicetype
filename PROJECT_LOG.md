@@ -11,7 +11,7 @@ of every session.
 - [x] Step 1 — Repo & scaffolding (structure, config.py, pinned deps, first push)
 - [x] Step 2 — Audio capture (src/audio.py) **[Mac-only: needs mic]**
 - [x] Step 3 — Local transcription (src/transcriber.py) **[Mac-only: model download + benchmark]**
-- [ ] Step 4 — Global hotkey (src/app.py) **[Mac-only: Accessibility permission]**
+- [x] Step 4 — Global hotkey (src/app.py) **[Mac-only: Accessibility permission]** — code done, live hold-key test pending (needs a real key press, not scriptable from here)
 - [ ] Step 5 — Text injection (src/injector.py) **[Mac-only: keyboard control]**
 - [ ] Step 6 — AI cleanup mode (src/cleanup.py) — code can be written anywhere, testing needs Mac
 - [ ] Step 7 — Menu bar app (rumps) **[Mac-only]**
@@ -20,12 +20,17 @@ of every session.
 
 ## Exact next step
 
-Step 4: global hotkey in `src/app.py` — pynput listener, hold right-Option
-to record, release to stop+transcribe, taps under 0.3 s cancel. **Mac-only:
-needs Accessibility permission for the terminal.**
+Step 5: text injection in `src/injector.py` — pynput keyboard Controller
+types the transcript into the focused app, plus a clipboard-paste config
+option. End-to-end test: hold key, say "hello world," verify it types into
+TextEdit. **Mac-only.**
 
 Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
 incl. download), 5 s clip transcribed in 0.6 s warm. Mic test passed.
+
+Pending manual check: run `.venv/bin/python -m src.app` yourself, hold
+right-Option, say something, release — confirm it prints the transcript.
+If nothing happens, grant Accessibility permission (see below) and retry.
 
 ## Key decisions
 
