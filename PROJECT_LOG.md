@@ -14,26 +14,32 @@ of every session.
 - [x] Step 4 — Global hotkey (src/app.py) **[Mac-only: Accessibility permission]** — confirmed working live 2026-07-07
 - [x] Step 5 — Text injection (src/injector.py) **[Mac-only: keyboard control]** — confirmed working live 2026-07-07 (typed into TextEdit)
 - [x] Step 6 — AI cleanup mode (src/cleanup.py) — code done + wired into app.py; fallback-to-raw-text path confirmed (no API key configured yet, so live LLM cleanup itself is untested — see below)
-- [ ] Step 7 — Menu bar app (rumps) **[Mac-only]**
+- [x] Step 7 — Menu bar app (rumps) **[Mac-only]** — code done + imports clean; live launch/toggle/quit test pending (needs a human at the menu bar, see below)
 - [ ] Step 8 — Custom dictionary & polish
 - [ ] Step 9 — README, ship it
 
 ## Exact next step
 
-Step 7: menu-bar app in `src/app.py` using rumps — icon states
-(idle/recording/transcribing), menu items to toggle cleanup mode, toggle
-prompt mode, choose mic, quit. Wire the rumps app around the existing
-`HotkeyListener`. Launchable via `python -m src.app`. **Mac-only.**
+Step 8: custom dictionary (`user_dictionary.json`, word replacements
+applied post-transcription pre-injection) + polish (error handling for
+missing mic permission / model not downloaded / API down — most of this
+already degrades gracefully, audit for gaps). Model is already kept warm
+between uses (Step 3's module-level cache) — nothing new needed there.
 
 Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
 incl. download), 5 s clip transcribed in 0.6 s warm.
 
-Pending manual check: cleanup mode's actual LLM call is untested end-to-end
-— no real `VOICETYPE_API_KEY` is in `.env` yet. Verified fallback instead:
-with no key, `clean()` catches the API error and returns the raw transcript
-unchanged (never blocks typing). To test the real cleanup call, put a real
-OpenAI key in `.env` and set `VOICETYPE_CLEANUP_ENABLED=true`, then run
-`.venv/bin/python -m src.cleanup`.
+Pending manual checks (need a human, not scriptable from an agent session):
+1. Menu bar app: run `.venv/bin/python -m src.app`, confirm 🎙 icon appears
+   in the menu bar, click it, toggle Cleanup mode / Prompt mode (checkmarks
+   should appear), open Choose mic (should list input devices), hold the
+   hotkey and confirm icon changes 🎙 → 🔴 → ⏳ → 🎙 and text still types
+   correctly, then Quit from the menu.
+2. Cleanup mode's actual LLM call is untested end-to-end — no real
+   `VOICETYPE_API_KEY` is in `.env` yet. Verified fallback instead: with no
+   key, `clean()` catches the API error and returns the raw transcript
+   unchanged. To test the real call, put a real OpenAI key in `.env`, set
+   `VOICETYPE_CLEANUP_ENABLED=true`, run `.venv/bin/python -m src.cleanup`.
 
 ## Key decisions
 
