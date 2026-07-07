@@ -9,6 +9,7 @@ import time
 from pynput import keyboard
 
 from src.audio import Recorder
+from src.cleanup import clean
 from src.config import settings
 from src.injector import inject
 from src.transcriber import transcribe
@@ -49,6 +50,7 @@ class HotkeyListener:
             return  # accidental tap — discard, don't transcribe
 
         text = transcribe(audio)
+        text = clean(text)  # no-op unless cleanup/prompt mode is enabled
         if text:
             self._on_transcribed(text)
 
