@@ -59,18 +59,39 @@ README's "Cleanup mode backends" section for the full explanation).
   non-empty string) is required even though Ollama doesn't check it — the
   `openai` client library itself needs a non-empty string.
 
+## Post-v1: Part B — daily-driver setup (2026-07-07)
+
+Docs-only step (no app code changed).
+- README rewritten: proper macOS permissions walkthrough that explains the
+  per-executable TCC gotcha (grant to `.venv/bin/python` for auto-start, not
+  just to the terminal), a one-page **Daily usage** section (hotkey, status
+  icons, mode toggles, dictionary editing), and a corrected auto-start
+  section — the old `sed` used the wrong placeholder (`/path/to/voicetype`
+  vs the template's `/ABSOLUTE/PATH/TO/voicetype`) so it silently produced a
+  broken plist; fixed.
+- Recommended **LaunchAgent** over a Login Item (Login Items need a `.app`
+  bundle; we have `python -m src.app`, so a LaunchAgent is the right tool).
+- Generated a real, path-filled plist at
+  `~/Library/LaunchAgents/com.voicetype.app.plist` (validated with
+  `plutil -lint`) but deliberately did NOT `launchctl load` it — loading
+  must happen AFTER the user grants Accessibility/Mic to the python binary,
+  and can't be verified from this sandboxed session. User runs the two-step
+  load themselves (documented in README).
+- Note: that generated plist has the CURRENT path baked in
+  (`.../voicetype- WF`). It must be regenerated after the folder rename —
+  the README's `sed "s|...|$(pwd)|"` recipe handles this.
+
 ## Exact next step
 
-Part B queued: macOS permissions walkthrough for daily use, launch-at-login
-setup (need to resolve the `brew services` launchd quirk above or use the
-`launchd/com.voicetype.app.plist.example` template instead), one-page daily
-usage section in README, final commit.
-
-Other follow-ups, not urgent:
-- Rename the project folder (drop the `- WF` / space) — user's follow-up
-  task, not done by an agent session.
+Roadmap + both post-v1 parts complete. Remaining optional follow-ups:
+- **Grant permissions + load the LaunchAgent** — user action, needs a real
+  login session (see README "Auto-start on login").
+- Rename the project folder (drop the `- WF` / space), then regenerate the
+  LaunchAgent plist — user's follow-up task.
 - Persist the menu bar's mic picker choice to `.env` (currently session-only
   by design, see `ponytail:` comment in `src/app.py`).
+- Confirm `brew services list` shows ollama `started` from a real Terminal
+  (the `brew services` quirk noted in Part A was likely sandbox-specific).
 
 Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
 incl. download), 5 s clip transcribed in 0.6 s warm. Cleanup call via

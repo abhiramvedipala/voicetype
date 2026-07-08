@@ -19,6 +19,10 @@
 
     <key>RunAtLoad</key>
     <true/>
+    <!-- KeepAlive false on purpose: with it true, quitting VoiceType from
+         its menu would make launchd immediately relaunch it — you could
+         never actually quit. False means "start once at login"; Quit
+         really quits, and it comes back next login. -->
     <key>KeepAlive</key>
     <false/>
 

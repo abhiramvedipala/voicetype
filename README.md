@@ -33,8 +33,10 @@ Injector (pynput)   — types the final text into whatever app has focus
 Every stage past Recorder degrades gracefully: if transcription fails, the
 mic permission is missing, or the cleanup API is down, the app logs it and
 stays usable for your next dictation instead of crashing.
+ 
+## Setup & Usage
 
-## Setup from a fresh clone
+### 1. Installation
 
 ```bash
 git clone https://github.com/abhiramvedipala/voicetype.git
@@ -44,35 +46,93 @@ python3 -m venv .venv
 cp .env.example .env   # edit hotkey/model/etc. if you want non-default values
 ```
 
-### macOS permissions (both required, one-time)
+### 2. macOS permissions (one-time)
 
-1. **Microphone** — the first time you record, macOS prompts your terminal
-   app for mic access. Click Allow. If you miss it or deny it: System
-   Settings → Privacy & Security → Microphone → enable your terminal app.
-2. **Accessibility** — required for the global hotkey listener to see key
-   presses system-wide. macOS won't always prompt for this one
-   automatically: go to System Settings → Privacy & Security →
-   Accessibility → enable your terminal app yourself.
+VoiceType needs two permissions. **Both attach to the specific program that
+runs the app, not to "VoiceType" as a concept** — this matters below.
 
-### Run it
+1. **Microphone** — to record your voice.
+2. **Accessibility** — to (a) see the global hotkey system-wide and (b)
+   type text into other apps. Without it the hotkey silently does nothing.
+
+**The catch:** macOS grants these per-executable. When you launch by hand
+from a terminal, the permission is attributed to *your terminal app*
+(Terminal, iTerm2, PyCharm…). When launchd auto-starts it at login, there's
+no terminal parent — the permission is attributed to *the Python binary
+itself* (`.venv/bin/python`). Those are two different identities, so a grant
+to one does **not** carry over to the other.
+
+**Easiest path that covers both:** grant the permissions directly to the
+Python binary, which is what auto-start uses anyway.
+
+1. Run it once by hand: `.venv/bin/python -m src.app`
+2. Hold the hotkey and speak. macOS will prompt for the mic (click Allow)
+   and, for Accessibility, will usually add an entry (often shown as
+   "Python" or the binary path) to
+   `System Settings → Privacy & Security → Accessibility` — **toggle it on.**
+   If nothing appears, click `+`, press `Cmd+Shift+G`, paste the absolute
+   path to `.venv/bin/python` (run `pwd` in the repo to get the prefix), and
+   add it.
+3. Quit and relaunch once so it picks up the new grants.
+
+If the hotkey types nothing, it's almost always Accessibility not being
+enabled for the right binary — that's the #1 gotcha.
+
+### 3. Running the app
 
 ```bash
 .venv/bin/python -m src.app
 ```
 
-Look for the 🎙 icon in your menu bar. Hold the hotkey (default: right
-Option), speak, release — the icon cycles 🎙 → 🔴 (recording) → ⏳
-(transcribing) → 🎙, and the text types into whatever's focused. Click the
-menu bar icon to toggle Cleanup mode, Prompt mode, or pick a different mic.
+A 🎙 icon appears in your menu bar. That's it — see **Daily usage** below.
 
-### Run the tests
+## Daily usage
 
-No test framework needed — each test file is a runnable script:
+Everything you need day-to-day, one page.
 
-```bash
-.venv/bin/python -m tests.test_config
-.venv/bin/python -m tests.test_dictation_pipeline
+**Dictate anywhere.** Put your cursor wherever you want text — a chat box,
+an editor, Notes, a terminal. Hold **right Option (⌥)**, speak, release. The
+words type themselves into whatever's focused. (Change the key with
+`VOICETYPE_HOTKEY` in `.env`.) Taps shorter than 0.3s are ignored, so a
+stray brush of the key won't fire.
+
+**Menu-bar icon = live status:**
+
+| Icon | Meaning |
+|---|---|
+| 🎙 | Idle — ready, listening for the hotkey |
+| 🔴 | Recording — the key is held, capturing your voice |
+| ⏳ | Transcribing / cleaning up — release happened, text is on its way |
+
+If it sticks on 🎙 when you hold the key, Accessibility isn't enabled for
+the running binary (see permissions above).
+
+**Toggle modes from the menu** (click the 🎙 icon):
+
+- **Cleanup mode** — strips "um/uh/like", fixes punctuation. Needs a cleanup
+  backend configured (Ollama = free/local, see below).
+- **Prompt mode** — rewrites rambling speech into one clean instruction,
+  handy for dictating to Claude Code.
+- **Choose mic** — pick a different input device (resets each launch).
+
+A checkmark shows which modes are on. These override the `.env` defaults for
+the current session.
+
+**When it mishears a technical term**, teach it — edit
+[`user_dictionary.json`](user_dictionary.json) at the repo root:
+
+```json
+{
+  "cloud code": "Claude Code",
+  "voice type": "VoiceType",
+  "pie torch": "PyTorch"
+}
 ```
+
+Left side = what Whisper hears (lowercase), right side = what gets typed.
+Whole-word, case-insensitive; the fix applies on your *next* dictation, no
+restart needed. Speech models guess the statistically likeliest word, so
+rare names and jargon lose to common lookalikes — this table is the fix.
 
 ## Configuration
 
@@ -144,19 +204,49 @@ that stayed both fast (~0.6s per cleanup call on Apple Silicon, no
 noticeable added latency over transcription itself) and reliable enough
 for this specific narrow task.
 
-## Auto-start on login (optional)
+## Auto-start on login
 
-A launchd template lives at
-[`launchd/com.voicetype.app.plist.example`](launchd/com.voicetype.app.plist.example).
-To use it: replace the placeholder paths with your actual repo path (run
-`pwd` inside the repo), rename the file to drop `.example`, then:
+Recommended approach: a **LaunchAgent** (a per-user launchd job), using the
+template in [`launchd/`](launchd/com.voicetype.app.plist.example).
+
+**Why a LaunchAgent and not a "Login Item"?** macOS Login Items
+(`System Settings → General → Login Items`) expect a `.app` bundle. VoiceType
+isn't a bundle — it's `python -m src.app`. Wrapping it into a `.app` just to
+appear there (via py2app/Automator) is extra machinery for no benefit. A
+LaunchAgent is purpose-built for "run this command at login," which is
+exactly what we have.
+
+**Do permissions first.** Because the LaunchAgent runs `.venv/bin/python`
+directly, that binary is the one that needs Microphone + Accessibility (see
+[permissions](#2-macos-permissions-one-time) above). Grant them by running
+the app manually once *before* installing the agent, or the auto-started
+copy will launch but the hotkey won't work.
+
+Then, from the repo root:
 
 ```bash
-cp launchd/com.voicetype.app.plist ~/Library/LaunchAgents/
+# 1. Generate the plist with your real paths baked in (rename-safe: this
+#    reads the CURRENT directory, so re-run it if you ever move the repo).
+sed "s|/ABSOLUTE/PATH/TO/voicetype|$(pwd)|g" \
+    launchd/com.voicetype.app.plist.example \
+    > ~/Library/LaunchAgents/com.voicetype.app.plist
+
+# 2. Load it (also starts it now, thanks to RunAtLoad).
 launchctl load ~/Library/LaunchAgents/com.voicetype.app.plist
 ```
 
-To stop it from auto-starting: `launchctl unload ~/Library/LaunchAgents/com.voicetype.app.plist`.
+VoiceType now starts at every login. **Quitting from the menu really quits**
+(the agent uses `KeepAlive=false` on purpose — with it true, launchd would
+relaunch instantly and you could never quit); it comes back at next login.
+
+To stop auto-starting:
+```bash
+launchctl unload ~/Library/LaunchAgents/com.voicetype.app.plist
+rm ~/Library/LaunchAgents/com.voicetype.app.plist
+```
+
+Logs (handy if it silently doesn't start): `/tmp/voicetype.log` and
+`/tmp/voicetype.err`.
 
 ## Project structure
 
