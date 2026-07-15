@@ -1,5 +1,10 @@
 """Smallest check that settings load with sane defaults."""
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.config import Settings
 
 

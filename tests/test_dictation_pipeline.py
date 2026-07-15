@@ -1,7 +1,11 @@
 """Confirms a failure anywhere in transcribe/clean/dictionary/inject is
 swallowed — the listener must never crash or get stuck on a bad dictation."""
 
+import sys
+from pathlib import Path
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.app import HotkeyListener
 from src.config import settings

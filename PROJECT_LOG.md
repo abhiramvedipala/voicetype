@@ -81,17 +81,59 @@ Docs-only step (no app code changed).
   (`.../voicetype- WF`). It must be regenerated after the folder rename —
   the README's `sed "s|...|$(pwd)|"` recipe handles this.
 
+## Post-v1: Part C — repo move + daily-driver install (2026-07-14)
+
+The repo moved from `~/PycharmProjects/voicetype- WF` to `~/voicetype`
+(rename follow-up from Part B, done). The venv did not survive the move, so
+this session rebuilt the runtime and installed the LaunchAgent for real:
+
+- **Rebuilt `.venv`** (Python 3.13.5 framework build) from pinned
+  `requirements.txt`; all imports clean.
+- **Created `.env`** with the daily-driver config: cleanup mode ON via
+  Ollama (`qwen2.5:3b` @ `http://localhost:11434/v1`).
+- **Both test scripts pass.** Also made them runnable as plain
+  `python tests/test_*.py` (added a 2-line `sys.path` shim — they previously
+  required `PYTHONPATH=.` / `-m`, contradicting the README's "runnable
+  scripts" claim).
+- **Full pipeline e2e-tested without a mic**: synthesized speech via macOS
+  `say` (16 kHz mono wav) → `transcribe` → `clean` (live Ollama call) →
+  `apply_dictionary`. Raw "open Cloud Code and fix the log in bug" came out
+  as "…open Claude Code and fix the login bug, please." Transcribe 0.6–1.7 s,
+  cleanup 3.8 s cold / sub-second warm.
+- **LaunchAgent installed and running**: regenerated
+  `~/Library/LaunchAgents/com.voicetype.app.plist` with the new path
+  (plutil-validated), loaded it. Quirk confirmed again from an agent
+  session: `launchctl load` registered but didn't spawn; had to
+  `launchctl bootstrap gui/$UID …` + `launchctl kickstart` to get it
+  running. At a real login, RunAtLoad fires normally — nothing to do.
+- **TCC identity nailed down**: the process launchd runs is
+  `/Library/Frameworks/Python.framework/…/Resources/Python.app` (shows as
+  "Python" in System Settings). The venv is only symlinks to it, so repo
+  moves/renames never invalidate grants. `/tmp/voicetype.err` currently
+  logs "This process is not trusted!" — **Accessibility is NOT yet granted**
+  to Python; the hotkey is dead until the user toggles it (see below).
+- Ollama confirmed: `ollama serve` running since Jul 7,
+  `homebrew.mxcl.ollama.plist` LaunchAgent present → survives login.
+  `brew services list` says `other` (started outside brew supervision) —
+  cosmetic, ignore.
+
 ## Exact next step
 
-Roadmap + both post-v1 parts complete. Remaining optional follow-ups:
-- **Grant permissions + load the LaunchAgent** — user action, needs a real
-  login session (see README "Auto-start on login").
-- Rename the project folder (drop the `- WF` / space), then regenerate the
-  LaunchAgent plist — user's follow-up task.
+One manual step left, then it's a daily driver (needs the real user at the
+screen — TCC grants can't be scripted, by design):
+1. System Settings → Privacy & Security → **Accessibility** → enable
+   **Python** (if absent: `+` → Cmd+Shift+G →
+   `/Library/Frameworks/Python.framework/Versions/3.13/Resources/Python.app`).
+   Same for **Input Monitoring** if the hotkey still does nothing.
+2. Hold right Option and speak — first use prompts for **Microphone**, click
+   Allow. If the icon sticks on 🎙, restart the app:
+   `launchctl kickstart -k gui/$(id -u)/com.voicetype.app`.
+
+Optional follow-ups:
 - Persist the menu bar's mic picker choice to `.env` (currently session-only
   by design, see `ponytail:` comment in `src/app.py`).
-- Confirm `brew services list` shows ollama `started` from a real Terminal
-  (the `brew services` quirk noted in Part A was likely sandbox-specific).
+- After the next real login, sanity-check both agents came up:
+  `launchctl list | grep -E 'voicetype|ollama'`.
 
 Benchmarks (2026-07-07, this Mac): base model cold load 5.9 s (first run
 incl. download), 5 s clip transcribed in 0.6 s warm. Cleanup call via
